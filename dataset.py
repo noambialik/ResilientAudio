@@ -97,6 +97,7 @@ class AudioDataset4(torch.utils.data.Dataset):
 
 NUM_DATASET_WORKERS = 2
 import csv
+import os
 def read_metadata_jamendo(metadata_path, dataset_root):
     audio_path = []
     audio_dur_sec = []
@@ -124,7 +125,7 @@ def get_loader(config, datasetClass=None, ngpus=False, n_workers=NUM_DATASET_WOR
 
     elif config.dataset == 'LibriSpeech':
         print('Use LibriSpeech DataSet')
-        dataset_root = '/media/Dataset/LibriSpeech/'
+        dataset_root = os.environ.get('LIBRISPEECH_ROOT', '/media/Dataset/LibriSpeech/')
         train_path = [join(dataset_root, 'train-clean-100'),
                       join(dataset_root, 'train-clean-360'),
                       # join(dataset_root, 'train-other-500'),
@@ -139,12 +140,14 @@ def get_loader(config, datasetClass=None, ngpus=False, n_workers=NUM_DATASET_WOR
 
     elif config.dataset == 'LibriTTS':
         print('Use LibriTTS DataSet')
-        dataset_root = '/media/Dataset/LibriTTS/'
-        dataset_root_test = '/media/Dataset/LibriTTS/'
+        dataset_root = os.environ.get('LIBRITTS_ROOT', '/media/Dataset/LibriTTS/')
+        dataset_root_test = os.environ.get('LIBRITTS_ROOT', '/media/Dataset/LibriTTS/')
         train_path = join(dataset_root, 'train-clean-100')
         test_path = join(dataset_root_test, 'test-clean')
+        dev_path = test_path
         trainset = glob.glob(join(train_path, '**/*.wav'), recursive=True)
         testset = glob.glob(join(test_path, '**/*.wav'), recursive=True)
+        devset = glob.glob(join(dev_path, '**/*.wav'), recursive=True)
 
     elif config.dataset == 'Jamendo':
         print('Use Jamendo Music DataSet')

@@ -2,7 +2,6 @@ import os
 import warnings
 
 import numpy as np
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 
 
 from models import SoundSpring_speech16k
@@ -14,17 +13,16 @@ import torch.multiprocessing
 from utils import AverageMeter, save_model, logger_configuration, write_json
 import time
 from loss_function import *
-from pesq import *
 import soundfile as sf
 
 import random
 from einops import rearrange
 import wandb
+import argparse
 
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
 from trainer.scheduler import WarmupPolicy, NoamHoldAnnealing
-from metrics import AudioMetrics
 
 
 def dataset_setup(config):
@@ -155,7 +153,10 @@ def train(model, train_loader, testDataset, optimizer_g, optimizer_lm, train_mod
 
 if __name__ == '__main__':
     from omegaconf import OmegaConf
-    config = OmegaConf.load("configs/train_config.yaml")
+    parser = argparse.ArgumentParser(description="SoundSpring training entrypoint")
+    parser.add_argument("--config", required=True, help="Path to OmegaConf YAML config file")
+    args = parser.parse_args()
+    config = OmegaConf.load(args.config)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -176,9 +177,13 @@ if __name__ == '__main__':
 
     if config.save_log:
         import shutil
-        shutil.copy('./train_SoundSpring.py', os.path.join(config.workdir, 'train_SoundSpring.py'))
-        shutil.copy('./models/SoundSpring_speech.py', os.path.join(config.workdir, 'SoundSpring_speech.py'))
-        shutil.copy('./entropy_model/LM.py', os.path.join(config.workdir, 'LM.py'))
+        for source_path, target_name in [
+            ("./train_SoundSpring.py", "train_SoundSpring.py"),
+            ("./models/SoundSpring_speech.py", "SoundSpring_speech.py"),
+            ("./entropy_model/LM.py", "LM.py"),
+        ]:
+            if os.path.exists(source_path):
+                shutil.copy(source_path, os.path.join(config.workdir, target_name))
 
     if config.lite_model:   # only applicable for soundspring-s
         config.target_bandwidths = [1.5, 3., 6, 12.]  
@@ -244,7 +249,7 @@ if __name__ == '__main__':
         model.load_state_dict(state_dict['generator'], strict=True)
     else:
         state_dict = None
-        config.model_config.load = True
+        config.model_config.load = False
 
     model = model.to(device)
 

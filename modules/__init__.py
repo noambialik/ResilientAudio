@@ -21,4 +21,3 @@ from .conv import (
 from .lstm import SLSTM
 from .seanet import SEANetEncoder, SEANetDecoder
 from .transformer import StreamingTransformerEncoder
-from .seanet_snake import SEANetEncoder_Snake, SEANetDecoder_Snake

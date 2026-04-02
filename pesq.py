@@ -12,8 +12,25 @@ import numpy as np
 import ctypes
 
 path_to_PESQ = None
-pesq_dll = ctypes.CDLL(path_to_PESQ)
-pesq_dll.pesq.restype = ctypes.c_double
+pesq_dll = None
+pesq_load_error = None
+if path_to_PESQ is not None:
+    try:
+        pesq_dll = ctypes.CDLL(path_to_PESQ)
+        pesq_dll.pesq.restype = ctypes.c_double
+    except Exception as error:
+        pesq_load_error = error
+
+
+def _ensure_pesq_available():
+    if pesq_dll is not None:
+        return
+    if pesq_load_error is not None:
+        raise RuntimeError(
+            f"PESQ backend failed to load: {pesq_load_error}. "
+            "Set path_to_PESQ to a valid compiled PESQ shared library."
+        )
+    raise RuntimeError("PESQ backend unavailable: path_to_PESQ is not configured.")
 
 
 def reconstruct_from_windows(windows, config):
@@ -63,6 +80,7 @@ def run_pesq_waveforms(clean_wav, dirty_wav): # taking in two waveforms numpy 1d
     clean_wav = clean_wav.astype(np.double)
     dirty_wav = dirty_wav.astype(np.double)
 
+    _ensure_pesq_available()
     return pesq_dll.pesq(ctypes.c_void_p(clean_wav.ctypes.data),
                          ctypes.c_void_p(dirty_wav.ctypes.data),
                          len(clean_wav),
